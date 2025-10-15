@@ -12,7 +12,7 @@ router = APIRouter(prefix="/labs", tags=["labs"])
 @router.get('', response_model=List[dict])
 def get_labs(session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Get all available labs"""
-    labs = session.exec(select(Lab).where(Lab.is_active == True)).all()
+    labs = session.exec(select(Lab).where(Lab.is_active)).all()
     return [
         {
             "id": lab.id,
@@ -20,10 +20,53 @@ def get_labs(session: Session = Depends(get_session), current_user: User = Depen
             "name": lab.name,
             "description": lab.description,
             "ui_url": lab.ui_url,
-            "is_active": lab.is_active
+            "api_url": lab.api_url,
+            "session_manager_url": lab.session_manager_url,
+            "is_active": lab.is_active,
+            "created_at": lab.created_at.isoformat()
         }
         for lab in labs
     ]
+
+
+@router.post('', response_model=dict)
+def create_lab(lab_data: dict, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
+    """Register a new lab (admin only)"""
+    # Check if user is admin
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+
+    # Check if slug already exists
+    existing = session.exec(select(Lab).where(Lab.slug == lab_data['slug'])).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Lab with slug '{lab_data['slug']}' already exists")
+
+    # Create the lab
+    lab = Lab(
+        slug=lab_data['slug'],
+        name=lab_data['name'],
+        description=lab_data.get('description', ''),
+        ui_url=lab_data['ui_url'],
+        api_url=lab_data['api_url'],
+        session_manager_url=lab_data['session_manager_url'],
+        is_active=True
+    )
+
+    session.add(lab)
+    session.commit()
+    session.refresh(lab)
+
+    return {
+        "id": lab.id,
+        "slug": lab.slug,
+        "name": lab.name,
+        "description": lab.description,
+        "ui_url": lab.ui_url,
+        "api_url": lab.api_url,
+        "session_manager_url": lab.session_manager_url,
+        "is_active": lab.is_active,
+        "created_at": lab.created_at.isoformat()
+    }
 
 
 @router.get("/{lab_slug}", response_model=dict)
@@ -42,7 +85,8 @@ def get_lab(lab_slug: str, session: Session = Depends(get_session), current_user
         "ui_url": lab.ui_url,
         "api_url": lab.api_url,
         "session_manager_url": lab.session_manager_url,
-        "is_active": lab.is_active
+        "is_active": lab.is_active,
+        "created_at": lab.created_at.isoformat()
     }
 
 
@@ -75,7 +119,7 @@ def check_lab_access(lab_slug: str, user_id: int, session: Session = Depends(get
             select(LabAssignment).where(
                 LabAssignment.course_id == enrollment.course_id,
                 LabAssignment.lab_id == lab.id,
-                LabAssignment.is_active == True
+                LabAssignment.is_active
             )
         ).first()
 

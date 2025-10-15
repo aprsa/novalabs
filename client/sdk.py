@@ -101,6 +101,41 @@ class HubClient:
         except HubClientError:
             raise AuthenticationError("Invalid email or password")
 
+    def register(self, email: str, password: str, first_name: str, last_name: str, institution: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Register a new user account
+
+        Args:
+            email: User email
+            password: User password
+            first_name: User first name
+            last_name: User last name
+            institution: Optional institution name
+
+        Returns:
+            Dictionary with user information
+
+        Raises:
+            HubClientError: If registration fails
+        """
+        return self._request('POST', '/register', json={
+            'email': email,
+            'password': password,
+            'first_name': first_name,
+            'last_name': last_name,
+            'institution': institution
+        })
+
+    def logout(self) -> None:
+        """
+        Logout by clearing the token
+
+        This clears the stored token and removes the Authorization header
+        """
+        self.token = None
+        if 'Authorization' in self.session.headers:
+            del self.session.headers['Authorization']
+
     def verify_token(self, token: Optional[str] = None) -> bool:
         """
         Verify if a token is valid
@@ -145,6 +180,10 @@ class HubClient:
         """
         return self._request('GET', '/users/me')
 
+    def get_users(self) -> List[Dict[str, Any]]:
+        """Get all users (admin only)"""
+        return self._request('GET', '/users')
+
     def get_user(self, user_id: int) -> Dict[str, Any]:
         """Get user by ID"""
         return self._request('GET', f'/users/{user_id}')
@@ -167,6 +206,10 @@ class HubClient:
     def get_user_courses(self, user_id: int) -> List[Dict[str, Any]]:
         """Get all courses for a user"""
         return self._request('GET', f'/users/{user_id}/courses')
+
+    def get_courses(self) -> List[Dict[str, Any]]:
+        """Get all available courses"""
+        return self._request('GET', '/courses')
 
     def get_course(self, course_id: int) -> Dict[str, Any]:
         """Get course by ID"""
@@ -194,6 +237,33 @@ class HubClient:
         """Get lab by slug (e.g., 'phoebe')"""
         return self._request('GET', f'/labs/{lab_slug}')
 
+    def register_lab(self, slug: str, name: str, description: str, ui_url: str, api_url: str, session_manager_url: str) -> Dict[str, Any]:
+        """
+        Register a new lab (admin only)
+
+        Args:
+            slug: Unique lab identifier
+            name: Lab display name
+            description: Lab description
+            ui_url: URL to lab UI
+            api_url: URL to lab API
+            session_manager_url: URL to lab session manager
+
+        Returns:
+            Created lab dictionary
+
+        Raises:
+            HubClientError: If registration fails
+        """
+        return self._request('POST', '/labs', json={
+            'slug': slug,
+            'name': name,
+            'description': description,
+            'ui_url': ui_url,
+            'api_url': api_url,
+            'session_manager_url': session_manager_url
+        })
+
     def check_lab_access(self, user_id: int, lab_slug: str) -> Dict[str, Any]:
         """
         Check if user has access to a lab
@@ -206,6 +276,86 @@ class HubClient:
             - reason: str (if no access)
         """
         return self._request('GET', f'/labs/{lab_slug}/access', params={'user_id': user_id})
+
+    # Enrollment methods
+    def get_enrollments(self, course_id: Optional[int] = None, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get enrollments, optionally filtered by course_id or user_id"""
+        params = {}
+        if course_id is not None:
+            params['course_id'] = course_id
+        if user_id is not None:
+            params['user_id'] = user_id
+        return self._request('GET', '/enrollments', params=params)
+
+    def create_enrollment(self, user_id: int, course_id: int, role: str = 'student') -> Dict[str, Any]:
+        """Create a new enrollment (instructor/admin only)"""
+        return self._request('POST', '/enrollments', json={
+            'user_id': user_id,
+            'course_id': course_id,
+            'role': role
+        })
+
+    def get_enrollment(self, enrollment_id: int) -> Dict[str, Any]:
+        """Get enrollment by ID"""
+        return self._request('GET', f'/enrollments/{enrollment_id}')
+
+    def delete_enrollment(self, enrollment_id: int) -> Dict[str, Any]:
+        """Delete an enrollment (instructor/admin only)"""
+        return self._request('DELETE', f'/enrollments/{enrollment_id}')
+
+    # Lab assignment methods
+    def get_assignments(self, course_id: Optional[int] = None, lab_id: Optional[int] = None, is_active: Optional[bool] = None) -> List[Dict[str, Any]]:
+        """Get lab assignments, optionally filtered"""
+        params = {}
+        if course_id is not None:
+            params['course_id'] = course_id
+        if lab_id is not None:
+            params['lab_id'] = lab_id
+        if is_active is not None:
+            params['is_active'] = is_active
+        return self._request('GET', '/assignments', params=params)
+
+    def create_assignment(
+        self, course_id: int, lab_id: int, title: str, due_date: Optional[str] = None,
+        points_possible: Optional[float] = None, is_active: bool = True
+    ) -> Dict[str, Any]:
+        """Create a new lab assignment (instructor/admin only)"""
+        return self._request('POST', '/assignments', json={
+            'course_id': course_id,
+            'lab_id': lab_id,
+            'title': title,
+            'due_date': due_date,
+            'points_possible': points_possible,
+            'is_active': is_active
+        })
+
+    def get_assignment(self, assignment_id: int) -> Dict[str, Any]:
+        """Get assignment by ID"""
+        return self._request('GET', f'/assignments/{assignment_id}')
+
+    def update_assignment(self, assignment_id: int, **kwargs) -> Dict[str, Any]:
+        """Update an assignment (instructor/admin only). Accepts: title, due_date, points_possible, is_active"""
+        return self._request('PATCH', f'/assignments/{assignment_id}', json=kwargs)
+
+    def delete_assignment(self, assignment_id: int) -> Dict[str, Any]:
+        """Delete an assignment (instructor/admin only)"""
+        return self._request('DELETE', f'/assignments/{assignment_id}')
+
+    # Lab session methods
+    def get_sessions(self, user_id: Optional[int] = None, lab_id: Optional[int] = None, course_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get lab sessions, optionally filtered"""
+        params = {}
+        if user_id is not None:
+            params['user_id'] = user_id
+        if lab_id is not None:
+            params['lab_id'] = lab_id
+        if course_id is not None:
+            params['course_id'] = course_id
+        return self._request('GET', '/sessions', params=params)
+
+    def get_session(self, session_id: int) -> Dict[str, Any]:
+        """Get session by ID"""
+        return self._request('GET', f'/sessions/{session_id}')
 
     def create_lab_session(self, user_id: int, lab_slug: str, course_id: Optional[int] = None, assignment_id: Optional[int] = None) -> Dict[str, Any]:
         """
@@ -257,7 +407,10 @@ class HubClient:
             params=params
         )
 
-    def submit_grade(self, user_id: int, assignment_id: int, score: float, max_score: float, feedback: Optional[str] = None, auto_graded: bool = False) -> Dict[str, Any]:
+    def submit_grade(
+        self, user_id: int, assignment_id: int, score: float, max_score: float,
+        feedback: Optional[str] = None, auto_graded: bool = False
+    ) -> Dict[str, Any]:
         """Submit a grade for a lab assignment"""
         return self._request(
             'POST',
