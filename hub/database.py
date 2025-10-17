@@ -4,7 +4,7 @@ import toml
 import os
 
 # Import all models for automatic registration
-from .models import User, Course, Enrollment, Lab, LabAssignment, LabSession, Grade
+from .models import User, Lab, UserProgress
 
 # Load config
 config_path = os.path.join(os.path.dirname(__file__), 'config.toml')

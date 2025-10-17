@@ -1,11 +1,12 @@
 """Authentication routes"""
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlmodel import Session
+from sqlmodel import Session, select
 from datetime import timedelta
 
 from ..database import get_session
-from ..auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from ..auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, hash_password
+from ..models import User
 
 router = APIRouter(tags=["auth"])
 
@@ -40,4 +41,52 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Sessi
             'last_name': user.last_name,
             'role': user.role
         }
+    }
+
+
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+async def register(registration: dict, session: Session = Depends(get_session)):
+    """
+    Register a new user account
+
+    Creates a new user with 'student' role by default
+    """
+    # Check if email already exists
+    existing_user = session.exec(select(User).where(User.email == registration['email'])).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Email already registered'
+        )
+
+    # Validate password length
+    if len(registration['password']) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Password must be at least 8 characters'
+        )
+
+    # Create new user
+    hashed_password = hash_password(registration['password'])
+    new_user = User(
+        email=registration['email'],
+        hashed_password=hashed_password,
+        first_name=registration['first_name'],
+        last_name=registration['last_name'],
+        role='student',  # Default role
+        institution=registration.get('institution')
+    )
+
+    session.add(new_user)
+    session.commit()
+    session.refresh(new_user)
+
+    return {
+        'id': new_user.id,
+        'email': new_user.email,
+        'first_name': new_user.first_name,
+        'last_name': new_user.last_name,
+        'role': new_user.role,
+        'rank': new_user.rank,
+        'message': 'User registered successfully'
     }

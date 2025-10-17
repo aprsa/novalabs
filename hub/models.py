@@ -6,9 +6,28 @@ from enum import Enum
 
 class UserRole(str, Enum):
     STUDENT = 'student'
-    INSTRUCTOR = 'instructor'
     TA = 'ta'
+    INSTRUCTOR = 'instructor'
     ADMIN = 'admin'
+
+
+class UserRank(str, Enum):
+    """Student progression ranks - casual to expert"""
+    DABBLER = 'dabbler'                  # Starting rank (0%)
+    HOBBYIST = 'hobbyist'                # 15% progress
+    ENTHUSIAST = 'enthusiast'            # 30% progress
+    EXPLORER = 'explorer'                # 45% progress
+    APPRENTICE = 'apprentice'            # 60% progress
+    RESEARCHER = 'researcher'            # 75% progress
+    MASTER = 'master'                    # 90%+ progress
+
+
+class ProgressStatus(str, Enum):
+    """Lab progress states"""
+    LOCKED = 'locked'               # Prerequisites not met
+    UNLOCKED = 'unlocked'           # Can start
+    IN_PROGRESS = 'in_progress'     # Started but not completed
+    COMPLETED = 'completed'         # Finished with score
 
 
 class User(SQLModel, table=True):
@@ -23,120 +42,103 @@ class User(SQLModel, table=True):
     role: str = Field(default=UserRole.STUDENT)
     institution: Optional[str] = None
     is_active: bool = Field(default=True)
+
+    # Achievement tracking
+    rank: str = Field(default=UserRank.DABBLER)
+    total_score: float = Field(default=0.0)      # Sum of all lab scores
+    total_bonus_points: float = Field(default=0.0)  # Extra challenges
+
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
-    enrollments: List['Enrollment'] = Relationship(back_populates='user')
-    lab_sessions: List['LabSession'] = Relationship(back_populates='user')
-
-
-class Course(SQLModel, table=True):
-    """A course (e.g., ASTR 101, Fall 2024)"""
-    __tablename__ = 'courses'
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    code: str                          # ASTR-101
-    name: str                          # Introduction to Astronomy
-    semester: str                      # Fall 2024
-    instructor_id: int = Field(foreign_key='users.id')
-    ta_id: Optional[int] = Field(foreign_key='users.id', default=None)
-    institution: Optional[str] = None
-    is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-
-    # Relationships
-    enrollments: List['Enrollment'] = Relationship(back_populates='course')
-    assignments: List['LabAssignment'] = Relationship(back_populates='course')
-
-
-class Enrollment(SQLModel, table=True):
-    """Student enrollment in a course"""
-    __tablename__ = 'enrollments'
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key='users.id')
-    course_id: int = Field(foreign_key='courses.id')
-    role: str = Field(default=UserRole.STUDENT)  # student, ta, instructor
-    enrolled_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-
-    # Relationships
-    user: User = Relationship(back_populates='enrollments')
-    course: Course = Relationship(back_populates='enrollments')
+    progress: List['UserProgress'] = Relationship(back_populates='user')
 
 
 class Lab(SQLModel, table=True):
-    """A lab module (e.g., PHOEBE Lab, Exoplanet Lab)"""
+    """Lab module"""
     __tablename__ = 'labs'
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    slug: str = Field(unique=True, index=True)  # phoebe, exoplanet
-    name: str                                    # PHOEBE Binary Star Lab
+    ref: str = Field(unique=True, index=True)  # celestial_nav, phoebe, exoplanets
+    name: str                                    # "Celestial Navigation"
     description: str
+
+    # Sequence control
+    sequence_order: int = Field(index=True)     # 1, 2, 3... (determines unlock order)
+    category: str                                # "Earth", "Solar System", "Stars"
+    prerequisite_refs: Optional[str] = None     # JSON array: '["roemer_delay", "eclipses"]'
+
+    # Standalone lab interface
     ui_url: str                                  # http://localhost:8012
-    api_url: str                                 # http://localhost:8010
-    session_manager_url: str                     # http://localhost:8011
+
+    # Scoring
+    max_score: float = Field(default=100.0)     # Maximum possible score
+    has_bonus_challenge: bool = Field(default=False)  # Extra points available?
+    max_bonus_points: float = Field(default=0.0)      # Max bonus if has_bonus_challenge
+
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
-    assignments: List['LabAssignment'] = Relationship(back_populates='lab')
-    sessions: List['LabSession'] = Relationship(back_populates='lab')
+    progress: List['UserProgress'] = Relationship(back_populates='lab')
 
 
-class LabAssignment(SQLModel, table=True):
-    """Assignment of a lab to a course"""
-    __tablename__ = 'lab_assignments'
+class UserProgress(SQLModel, table=True):
+    """
+    Student progress through a specific lab
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    course_id: int = Field(foreign_key='courses.id')
-    lab_id: int = Field(foreign_key='labs.id')
-    title: str                                   # "Lab 1: Binary Star Basics"
-    due_date: Optional[datetime] = None
-    points_possible: Optional[float] = None
-    is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-
-    # Relationships
-    course: Course = Relationship(back_populates='assignments')
-    lab: Lab = Relationship(back_populates='assignments')
-    grades: List['Grade'] = Relationship(back_populates='assignment')
-
-
-class LabSession(SQLModel, table=True):
-    """Student's session in a specific lab"""
-    __tablename__ = "lab_sessions"
+    Tracks completion status, scores, attempts, and timestamps.
+    """
+    __tablename__ = 'user_progress'
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key='users.id')
-    lab_id: int = Field(foreign_key='labs.id')
-    course_id: Optional[int] = Field(foreign_key='courses.id')
-    assignment_id: Optional[int] = Field(foreign_key='lab_assignments.id')
+    user_id: int = Field(foreign_key='users.id', index=True)
+    lab_id: int = Field(foreign_key='labs.id', index=True)
 
-    # Lab-specific session info
-    external_session_id: str           # ID from lab's session manager
+    # Progress state
+    status: str = Field(default=ProgressStatus.LOCKED)  # locked/unlocked/in_progress/completed
 
-    started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    # Scoring
+    score: Optional[float] = None               # 0-100 score for main lab
+    bonus_points: float = Field(default=0.0)    # Extra points from bonus challenges
+
+    # Activity tracking
+    attempts: int = Field(default=0)            # Number of times started
+    started_at: Optional[datetime] = None       # First attempt timestamp
+    completed_at: Optional[datetime] = None     # Completion timestamp
     last_activity: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    completed_at: Optional[datetime] = None
+
+    # Optional instructor feedback
+    instructor_notes: Optional[str] = None
+    score_overridden: bool = Field(default=False)  # True if admin manually set score
 
     # Relationships
-    user: User = Relationship(back_populates='lab_sessions')
-    lab: Lab = Relationship(back_populates='sessions')
+    user: User = Relationship(back_populates='progress')
+    lab: Lab = Relationship(back_populates='progress')
+
+    class Config:
+        # Ensure unique constraint on user+lab combination
+        table_args = {'sqlite_autoincrement': True}
 
 
-class Grade(SQLModel, table=True):
-    """Grade for a lab assignment"""
-    __tablename__ = 'grades'
+# Future enhancement: Achievement/Badge system
+# class Achievement(SQLModel, table=True):
+#     """Achievements/badges that users can earn"""
+#     __tablename__ = 'achievements'
+#
+#     id: Optional[int] = Field(default=None, primary_key=True)
+#     ref: str = Field(unique=True)
+#     name: str
+#     description: str
+#     icon: str  # Icon name or emoji
+#     criteria: str  # JSON describing how to earn it
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key='users.id')
-    assignment_id: int = Field(foreign_key='lab_assignments.id')
-    score: Optional[float] = None
-    max_score: float
-    graded_at: Optional[datetime] = None
-    graded_by: Optional[int] = Field(foreign_key='users.id')
-    feedback: Optional[str] = None
-    auto_graded: bool = Field(default=False)
 
-    # Relationships
-    assignment: LabAssignment = Relationship(back_populates='grades')
+# class UserAchievement(SQLModel, table=True):
+#     """Junction table for user achievements"""
+#     __tablename__ = 'user_achievements'
+#
+#     id: Optional[int] = Field(default=None, primary_key=True)
+#     user_id: int = Field(foreign_key='users.id')
+#     achievement_id: int = Field(foreign_key='achievements.id')
+#     earned_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

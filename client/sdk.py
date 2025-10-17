@@ -2,7 +2,7 @@
 Client SDK for NovaLabs Hub API
 
 This client is used by lab UIs to interact with the hub
-for authentication, course management, and lab sessions.
+for authentication, user management, and lab progression tracking.
 """
 
 import requests
@@ -32,8 +32,17 @@ class HubClient:
         # Get current user
         user = hub.get_current_user()
 
+        # Get user's progress and rank
+        progress = hub.get_my_progress()
+
         # Check if user can access a lab
-        access = hub.check_lab_access(user_id=1, lab_slug="phoebe")
+        can_access = hub.check_lab_accessible(lab_ref="phoebe")
+
+        # Start a lab
+        hub.start_lab(lab_ref="phoebe")
+
+        # Complete a lab with score
+        hub.complete_lab(lab_ref="phoebe", score=85.5, bonus_points=10.0)
     """
 
     def __init__(self, base_url: str, token: Optional[str] = None):
@@ -72,11 +81,12 @@ class HubClient:
             response = self.session.request(method, url, **kwargs)
             response.raise_for_status()
             return response.json()
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 401:
-                raise AuthenticationError('Authentication failed or token expired')
-            raise HubClientError(f'HTTP {e.response.status_code}: {e.response.text}')
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
+            # Handle both requests and httpx (TestClient) exceptions
+            if hasattr(e, 'response') and hasattr(e.response, 'status_code'):
+                if e.response.status_code == 401:
+                    raise AuthenticationError('Authentication failed or token expired')
+                raise HubClientError(f'HTTP {e.response.status_code}: {e.response.text}')
             raise HubClientError(f'Request failed: {str(e)}')
 
     def login(self, email: str, password: str) -> str:
@@ -100,6 +110,41 @@ class HubClient:
             return self.token
         except HubClientError:
             raise AuthenticationError("Invalid email or password")
+
+    def register(self, email: str, password: str, first_name: str, last_name: str, institution: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Register a new user account
+
+        Args:
+            email: User email
+            password: User password
+            first_name: User first name
+            last_name: User last name
+            institution: Optional institution name
+
+        Returns:
+            Dictionary with user information
+
+        Raises:
+            HubClientError: If registration fails
+        """
+        return self._request('POST', '/register', json={
+            'email': email,
+            'password': password,
+            'first_name': first_name,
+            'last_name': last_name,
+            'institution': institution
+        })
+
+    def logout(self) -> None:
+        """
+        Logout by clearing the token
+
+        This clears the stored token and removes the Authorization header
+        """
+        self.token = None
+        if 'Authorization' in self.session.headers:
+            del self.session.headers['Authorization']
 
     def verify_token(self, token: Optional[str] = None) -> bool:
         """
@@ -145,11 +190,18 @@ class HubClient:
         """
         return self._request('GET', '/users/me')
 
+    def get_users(self) -> List[Dict[str, Any]]:
+        """Get all users (admin only)"""
+        return self._request('GET', '/users')
+
     def get_user(self, user_id: int) -> Dict[str, Any]:
         """Get user by ID"""
         return self._request('GET', f'/users/{user_id}')
 
-    def create_user(self, email: str, password: str, first_name: str, last_name: str, role: str = "student", institution: Optional[str] = None) -> Dict[str, Any]:
+    def create_user(
+        self, email: str, password: str, first_name: str, last_name: str,
+        role: str = "student", institution: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Create a new user (admin only)"""
         return self._request(
             'POST',
@@ -164,132 +216,157 @@ class HubClient:
             }
         )
 
-    def get_user_courses(self, user_id: int) -> List[Dict[str, Any]]:
-        """Get all courses for a user"""
-        return self._request('GET', f'/users/{user_id}/courses')
-
-    def get_course(self, course_id: int) -> Dict[str, Any]:
-        """Get course by ID"""
-        return self._request('GET', f'/courses/{course_id}')
-
-    def create_course(self, code: str, name: str, semester: str, instructor_id: int, institution: Optional[str] = None) -> Dict[str, Any]:
-        """Create a new course (instructor/admin only)"""
-        return self._request(
-            'POST',
-            '/courses',
-            json={
-                'code': code,
-                'name': name,
-                'semester': semester,
-                'instructor_id': instructor_id,
-                'institution': institution
-            }
-        )
-
     def get_labs(self) -> List[Dict[str, Any]]:
         """Get all available labs"""
         return self._request('GET', '/labs')
 
-    def get_lab(self, lab_slug: str) -> Dict[str, Any]:
-        """Get lab by slug (e.g., 'phoebe')"""
-        return self._request('GET', f'/labs/{lab_slug}')
+    def get_lab(self, lab_ref: str) -> Dict[str, Any]:
+        """Get lab by ref (e.g., 'phoebe')"""
+        return self._request('GET', f'/labs/{lab_ref}')
 
-    def check_lab_access(self, user_id: int, lab_slug: str) -> Dict[str, Any]:
+    def register_lab(
+        self, ref: str, name: str, description: str, ui_url: str, api_url: str,
+        session_manager_url: str, sequence_order: int, category: Optional[str] = None,
+        prerequisite_refs: Optional[List[str]] = None, has_bonus_challenge: bool = False,
+        max_bonus_points: float = 0.0
+    ) -> Dict[str, Any]:
         """
-        Check if user has access to a lab
+        Register a new lab (admin only)
+
+        Args:
+            ref: Unique lab identifier
+            name: Lab display name
+            description: Lab description
+            ui_url: URL to lab UI
+            api_url: URL to lab API
+            session_manager_url: URL to lab session manager
+            sequence_order: Position in lab sequence (0-based)
+            category: Optional category (e.g., 'Earth', 'Solar System', 'Stars')
+            prerequisite_refs: List of lab refs that must be completed first
+            has_bonus_challenge: Whether lab has bonus challenge
+            max_bonus_points: Maximum bonus points available
+
+        Returns:
+            Created lab dictionary
+
+        Raises:
+            HubClientError: If registration fails
+        """
+        return self._request('POST', '/labs', json={
+            'ref': ref,
+            'name': name,
+            'description': description,
+            'ui_url': ui_url,
+            'api_url': api_url,
+            'session_manager_url': session_manager_url,
+            'sequence_order': sequence_order,
+            'category': category,
+            'prerequisite_refs': prerequisite_refs or [],
+            'has_bonus_challenge': has_bonus_challenge,
+            'max_bonus_points': max_bonus_points
+        })
+
+    def check_lab_accessible(self, lab_ref: str) -> Dict[str, Any]:
+        """
+        Check if current user can access a lab
 
         Returns:
             Dictionary with:
-            - has_access: bool
-            - course_id: Optional[int]
-            - assignment_id: Optional[int]
-            - reason: str (if no access)
+            - accessible: bool
+            - status: str ('locked', 'unlocked', 'in_progress', 'completed')
+            - missing_prerequisites: List[str] (if locked)
         """
-        return self._request('GET', f'/labs/{lab_slug}/access', params={'user_id': user_id})
+        return self._request('GET', f'/labs/{lab_ref}/accessible')
 
-    def create_lab_session(self, user_id: int, lab_slug: str, course_id: Optional[int] = None, assignment_id: Optional[int] = None) -> Dict[str, Any]:
+    # Progress tracking methods
+    def get_my_progress(self) -> Dict[str, Any]:
         """
-        Create a new lab session for a user
+        Get current user's progress across all labs
 
         Returns:
-            Lab session with external_session_id to use with lab's session manager
+            Dictionary with:
+            - user: User info with rank and scores
+            - labs: List of all labs with progress status
         """
-        return self._request(
-            'POST',
-            '/lab-sessions',
-            json={
-                'user_id': user_id,
-                'lab_slug': lab_slug,
-                'course_id': course_id,
-                'assignment_id': assignment_id
-            }
-        )
+        return self._request('GET', '/progress')
 
-    def get_lab_session(self, session_id: int) -> Dict[str, Any]:
-        """Get lab session by ID"""
-        return self._request('GET', f'/lab-sessions/{session_id}')
-
-    def get_user_lab_sessions(self, user_id: int, lab_slug: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Get all lab sessions for a user, optionally filtered by lab"""
-        params = {}
-        if lab_slug:
-            params['lab_slug'] = lab_slug
-
-        return self._request('GET', f'/users/{user_id}/lab-sessions', params=params)
-
-    def update_lab_session_activity(self, session_id: int) -> Dict[str, Any]:
-        """Update last activity timestamp for a session"""
-        return self._request('PATCH', f'/lab-sessions/{session_id}/activity')
-
-    def complete_lab_session(self, session_id: int) -> Dict[str, Any]:
-        """Mark a lab session as completed"""
-        return self._request('POST', f'/lab-sessions/{session_id}/complete')
-
-    def get_user_grades(self, user_id: int, course_id: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Get all grades for a user, optionally filtered by course"""
-        params = {}
-        if course_id:
-            params['course_id'] = course_id
-
-        return self._request(
-            'GET',
-            f'/users/{user_id}/grades',
-            params=params
-        )
-
-    def submit_grade(self, user_id: int, assignment_id: int, score: float, max_score: float, feedback: Optional[str] = None, auto_graded: bool = False) -> Dict[str, Any]:
-        """Submit a grade for a lab assignment"""
-        return self._request(
-            'POST',
-            '/grades',
-            json={
-                'user_id': user_id,
-                'assignment_id': assignment_id,
-                'score': score,
-                'max_score': max_score,
-                'feedback': feedback,
-                'auto_graded': auto_graded
-            }
-        )
-
-    def get_or_create_lab_session(self, user_id: int, lab_slug: str, course_id: Optional[int] = None) -> Dict[str, Any]:
+    def start_lab(self, lab_ref: str) -> Dict[str, Any]:
         """
-        Get existing lab session or create a new one
+        Start a lab (creates progress record if doesn't exist)
 
-        Checks for an active (not completed) session first.
-        If none exists, creates a new one.
+        Args:
+            lab_ref: Lab identifier
+
+        Returns:
+            UserProgress record
+
+        Raises:
+            HubClientError: If prerequisites not met or lab doesn't exist
         """
-        # Get existing sessions
-        sessions = self.get_user_lab_sessions(user_id, lab_slug)
+        return self._request('POST', f'/progress/lab/{lab_ref}/start')
 
-        # Find active session (not completed)
-        for session in sessions:
-            if session.get('completed_at') is None:
-                # Update activity timestamp
-                return self.update_lab_session_activity(session['id'])
+    def complete_lab(
+        self, lab_ref: str, score: float, bonus_points: float = 0.0
+    ) -> Dict[str, Any]:
+        """
+        Complete a lab and submit score
 
-        # No active session, create new one
-        return self.create_lab_session(user_id, lab_slug, course_id)
+        Args:
+            lab_ref: Lab identifier
+            score: Lab score (0-100)
+            bonus_points: Bonus points earned
+
+        Returns:
+            Updated UserProgress with new rank info
+
+        Raises:
+            HubClientError: If lab not started or invalid score
+        """
+        return self._request('POST', f'/progress/lab/{lab_ref}/complete', json={
+            'score': score,
+            'bonus_points': bonus_points
+        })
+
+    def get_user_progress(self, user_id: int) -> Dict[str, Any]:
+        """
+        Get any user's progress (admin/instructor only)
+
+        Args:
+            user_id: User ID to get progress for
+
+        Returns:
+            Dictionary with user info and lab progress
+        """
+        return self._request('GET', f'/admin/users/{user_id}/progress')
+
+    def override_lab_score(
+        self, user_id: int, lab_ref: str, score: float,
+        bonus_points: Optional[float] = None, instructor_notes: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Override a user's lab score (instructor/admin only)
+
+        Args:
+            user_id: User ID
+            lab_ref: Lab identifier
+            score: New score (0-100)
+            bonus_points: Optional new bonus points
+            instructor_notes: Optional notes about the override
+
+        Returns:
+            Updated UserProgress record
+        """
+        data = {'score': score}
+        if bonus_points is not None:
+            data['bonus_points'] = bonus_points
+        if instructor_notes is not None:
+            data['instructor_notes'] = instructor_notes
+
+        return self._request(
+            'PATCH',
+            f'/admin/users/{user_id}/labs/{lab_ref}',
+            json=data
+        )
 
 
 # Example usage
@@ -299,7 +376,7 @@ if __name__ == "__main__":
 
     # Login
     try:
-        token = hub.login(email="admin@example.com", password="admin123")
+        token = hub.login(email="student@example.com", password="password")
         print("✓ Logged in successfully")
         print(f"  Token: {token[:20]}...")
 
@@ -308,9 +385,32 @@ if __name__ == "__main__":
         print(f"✓ Current user: {user['first_name']} {user['last_name']}")
         print(f"  Role: {user['role']}")
 
-        # Get labs
+        # Get my progress
+        progress = hub.get_my_progress()
+        print(f"✓ Current rank: {progress['user']['rank']}")
+        print(f"  Total score: {progress['user']['total_score']}")
+        print(f"  Total bonus: {progress['user']['total_bonus_points']}")
+
+        # Get all labs
         labs = hub.get_labs()
         print(f"✓ Available labs: {len(labs)}")
+
+        # Check if can access a specific lab
+        lab_ref = "celestial-navigation"
+        access = hub.check_lab_accessible(lab_ref)
+        if access['accessible']:
+            print(f"✓ Can access '{lab_ref}' (status: {access['status']})")
+
+            # Start the lab (if not already started)
+            if access['status'] == 'unlocked':
+                hub.start_lab(lab_ref)
+                print(f"  Started lab '{lab_ref}'")
+
+            # Complete the lab with score
+            # hub.complete_lab(lab_ref, score=85.5, bonus_points=10.0)
+            # print(f"  Completed lab with score 85.5 + 10 bonus")
+        else:
+            print(f"✗ Cannot access '{lab_ref}': {access.get('missing_prerequisites', [])}")
 
     except AuthenticationError as e:
         print(f"✗ Authentication failed: {e}")
