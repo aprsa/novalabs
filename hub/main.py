@@ -42,6 +42,12 @@ app.add_middleware(
 # Include all API routes
 app.include_router(api_router)
 
-if __name__ == "__main__":
+
+def main():
+    """Entry point for running the hub server"""
     import uvicorn
     uvicorn.run(app, host=config['server']['host'], port=config['server']['port'])
+
+
+if __name__ == "__main__":
+    main()

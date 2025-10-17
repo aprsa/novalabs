@@ -69,7 +69,7 @@ class UserDashboard(PageBase):
                                     ui.label(lab['description']).classes('text-gray-600 text-sm mb-4')
 
                                     # Check access
-                                    access = self.hub_client.check_lab_access(user['id'], lab['slug'])
+                                    access = self.hub_client.check_lab_access(user['id'], lab['ref'])
 
                                     if access['has_access']:
                                         ui.button(
@@ -92,7 +92,7 @@ class UserDashboard(PageBase):
         """Launch a lab in new tab"""
         # Create or resume lab session
         try:
-            session = self.hub_client.get_or_create_lab_session(user_id, lab['slug'])
+            session = self.hub_client.get_or_create_lab_session(user_id, lab['ref'])
             ui.run_javascript(f"window.open('{lab['ui_url']}', '_blank')")
             ui.notify(f'Launching {lab["name"]}...', type='positive')
         except HubClientError as e:

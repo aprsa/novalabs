@@ -1,0 +1,10 @@
+include README.md
+include ADMIN_CREATION.md
+include LICENSE
+include requirements.txt
+include hub/config.toml
+recursive-include hub/data .gitkeep
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude tests *
+recursive-exclude htmlcov *

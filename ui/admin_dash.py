@@ -376,8 +376,8 @@ class AdminDashboard(PageBase):
 
                                 with ui.row().classes('gap-4'):
                                     with ui.column():
-                                        ui.label('Slug').classes('text-xs text-gray-600')
-                                        ui.label(lab['slug']).classes('font-mono text-sm')
+                                        ui.label('ref').classes('text-xs text-gray-600')
+                                        ui.label(lab['ref']).classes('font-mono text-sm')
 
                                     with ui.column():
                                         ui.label('Status').classes('text-xs text-gray-600')
@@ -404,7 +404,7 @@ class AdminDashboard(PageBase):
         with ui.dialog() as dialog, ui.card().classes('w-[500px]'):
             ui.label('Register New Lab').classes('text-xl font-bold mb-4')
 
-            slug = ui.input('Slug', placeholder='exoplanet').classes('w-full')
+            ref = ui.input('ref', placeholder='exoplanet').classes('w-full')
             name = ui.input('Name', placeholder='Exoplanet Transit Lab').classes('w-full')
             description = ui.textarea('Description').classes('w-full')
             ui_url = ui.input('UI URL', placeholder='http://localhost:8013').classes('w-full')
@@ -414,18 +414,18 @@ class AdminDashboard(PageBase):
             with ui.row().classes('w-full justify-end gap-2 mt-4'):
                 ui.button('Cancel', on_click=dialog.close).props('flat')
                 ui.button('Register', on_click=lambda: self.register_lab(
-                    slug.value, name.value, description.value,
+                    ref.value, name.value, description.value,
                     ui_url.value, api_url.value, session_url.value, dialog
                 )).props('color=primary')
 
         dialog.open()
 
-    def register_lab(self, slug, name, description, ui_url, api_url, session_url, dialog):
+    def register_lab(self, ref, name, description, ui_url, api_url, session_url, dialog):
         """Register a new lab"""
         try:
             # Use SDK method
             self.hub_client.register_lab(
-                slug=slug,
+                ref=ref,
                 name=name,
                 description=description,
                 ui_url=ui_url,

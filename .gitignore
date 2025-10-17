@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Testing
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# SQLite databases
+hub/data/*.db
+hub/data/*.db-journal
+hub/data/*.db-wal
+hub/data/*.db-shm
+!hub/data/.gitkeep
+
+# Configuration
+local_config.toml
+.env.local
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
