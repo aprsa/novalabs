@@ -87,5 +87,6 @@ async def register(registration: dict, session: Session = Depends(get_session)):
         'first_name': new_user.first_name,
         'last_name': new_user.last_name,
         'role': new_user.role,
+        'rank': new_user.rank,
         'message': 'User registered successfully'
     }

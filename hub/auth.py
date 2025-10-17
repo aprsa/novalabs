@@ -43,7 +43,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 def verify_token(token: str) -> Optional[dict]:
     """Verify JWT token and return payload"""
 
-    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload

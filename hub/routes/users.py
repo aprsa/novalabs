@@ -36,5 +36,9 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
         'last_name': current_user.last_name,
         'role': current_user.role,
         'institution': current_user.institution,
+        'is_active': current_user.is_active,
+        'rank': current_user.rank,
+        'total_score': current_user.total_score,
+        'total_bonus_points': current_user.total_bonus_points,
         'created_at': current_user.created_at.isoformat()
     }
