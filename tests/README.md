@@ -34,12 +34,13 @@ pytest -v
 ```ascii
 tests/
 ├── __init__.py
-├── conftest.py          # Shared fixtures and configuration
-├── test_auth.py         # Authentication endpoint tests
-├── test_labs.py         # Lab administration and access tests
-├── test_progress.py     # Progress tracking endpoint tests
-├── test_admin.py        # Admin operations (lab/progress management)
-└── test_sdk.py          # SDK client tests
+├── conftest.py            # Shared fixtures and configuration
+├── test_auth.py           # Authentication endpoint tests
+├── test_labs.py           # Lab administration and access tests
+├── test_progress.py       # Progress tracking endpoint tests
+├── test_admin.py          # Admin operations (lab/progress management)
+├── test_user_sessions.py  # Session API endpoint tests
+└── test_sdk.py            # SDK client tests (including session wrappers)
 ```
 
 ## Test Coverage
@@ -90,6 +91,23 @@ tests/
 - ✅ Recalculate totals after override
 - ✅ Forbidden access for non-admins
 
+### Session Management Tests (`test_user_sessions.py`)
+- ✅ Create session (authenticated & unauthenticated)
+- ✅ Get session by ID
+- ✅ Update session token
+- ✅ Update session state
+- ✅ Update both token and state
+- ✅ Delete session (logout)
+- ✅ Session expiration handling
+- ✅ Inactive session handling
+- ✅ Get user sessions (list all active)
+- ✅ Session filtering (exclude expired/inactive)
+- ✅ Session sorting (by last activity)
+- ✅ Session ownership (access control)
+- ✅ Admin access to any user's sessions
+- ✅ Last activity timestamp updates
+- ✅ Complete session lifecycle
+
 ### SDK Tests (`test_sdk.py`)
 - ✅ Login/logout
 - ✅ Token verification
@@ -103,6 +121,15 @@ tests/
 - ✅ Admin operations (view progress, override scores)
 - ✅ Error handling
 - ✅ Register lab
+- ✅ **Session Management SDK Wrappers**:
+  - ✅ Create session
+  - ✅ Get session
+  - ✅ Update session (token, state, or both)
+  - ✅ Delete session
+  - ✅ Get user sessions
+  - ✅ Session lifecycle (end-to-end)
+  - ✅ Session error handling
+  - ✅ Access control testing
 
 ## Test Fixtures
 
@@ -116,12 +143,12 @@ Key fixtures available in `conftest.py`:
 - `client` - FastAPI TestClient (unauthenticated)
 - `authenticated_client` - Client with student auth token
 - `admin_client` - Client with admin auth token
-- `sdk_client` - HubClient SDK instance for testing
+- `sdk_client` - SDKClient SDK instance for testing
 
 ### User Fixtures
-- `test_user` - Sample student user (student@test.com, UserRank.DABBLER)
-- `test_admin` - Sample admin user (admin@test.com, UserRank.MASTER)
-- `test_instructor` - Sample instructor user (instructor@test.com, UserRank.RESEARCHER)
+- `test_user` - Sample student user (student@test.com, password: testpass123, UserRank.DABBLER)
+- `test_admin` - Sample admin user (admin@test.com, password: adminpass123, UserRank.MASTER)
+- `test_instructor` - Sample instructor user (instructor@test.com, password: instrpass123, UserRank.RESEARCHER)
 
 ### Lab Fixtures
 - `test_labs` - 3 test labs with prerequisites:
@@ -179,6 +206,18 @@ pytest --lf
 Target: 90%+ code coverage for:
 - `hub/routes/` - All endpoint handlers
 - `hub/auth.py` - Authentication logic
-- `client/sdk.py` - SDK methods
+- `client/sdk.py` - SDK methods (`SDKClient`)
+- `hub/models.py` - Database models
 
 Current coverage: Run `pytest --cov=hub --cov=client --cov-report=term` to see.
+
+### Recent Test Additions
+
+**Session Management (21 API tests + 11 SDK tests)**:
+- Complete coverage of server-side session lifecycle
+- Session creation, retrieval, update, and deletion
+- Token and state management
+- Session expiration and activity tracking
+- Multi-session management per user
+- Access control and admin privileges
+- SDK wrapper methods for all session operations

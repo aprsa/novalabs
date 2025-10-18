@@ -1,6 +1,6 @@
 # NovaLabs Hub
 
-Central hub for Villanova's astronomy lab ecosystem - authentication, course management, and lab progression tracking.
+Central hub for Villanova's astronomy lab ecosystem - authentication, session management, and lab progression tracking.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
@@ -8,18 +8,19 @@ Central hub for Villanova's astronomy lab ecosystem - authentication, course man
 
 ## Overview
 
-NovaLabs Hub is the central landing page and authentication/course management platform for Villanova's astronomy lab ecosystem. It's a FastAPI-based service that manages users, courses, lab assignments, and lab sessions across multiple independent astronomy lab applications.
+NovaLabs Hub is the central landing page and authentication/session management platform for Villanova's astronomy lab ecosystem. It's a FastAPI-based service that manages users, lab access, and progress tracking across multiple independent astronomy lab applications.
 
 ### Key Features
 
-- **Authentication & Authorization**: JWT-based auth with role management (student, TA, instructor, admin)
+- **Authentication & Authorization**: JWT-based auth with role management (student, instructor, admin)
+- **Server-Side Session Management**: Persistent sessions with 7-day expiration and state storage
 - **Lab Progression System**: Sequential lab unlocking based on prerequisites
 - **Progress Tracking**: Track student progress with scores, bonus points, and rank progression
 - **Progress Ranking**: 7-tier rank system (Dabbler → Hobbyist → Enthusiast → Apprentice → Explorer → Researcher → Master)
 - **Lab Retakes**: Support for retaking completed labs to improve retention
 - **Admin Dashboard**: Manage labs, view student progress, override scores
 - **RESTful API**: Clean, documented API for lab integrations
-- **Python SDK**: Client library for lab UIs to interact with hub
+- **Python SDK**: Client library (`SDKClient`) for lab UIs to interact with hub
 
 ## Architecture
 
@@ -37,6 +38,25 @@ NovaLabs Hub is the central landing page and authentication/course management pl
                  │   DB    │   │  Auth  │
                  └─────────┘   └────────┘
 ```
+
+### Session Management
+
+NovaLabs Hub uses server-side session management for persistent user sessions:
+
+- **Session Creation**: After authentication, a server-side session is created with a unique session ID
+- **Session Storage**: Sessions store JWT tokens, user state (JSON blob), and activity timestamps
+- **Session Expiration**: Sessions automatically expire after 7 days of inactivity
+- **Cookie-Based**: UI stores only the session ID in cookies (not the JWT token)
+- **Multi-Session Support**: Users can have multiple active sessions (e.g., different browsers/devices)
+- **Activity Tracking**: Last activity timestamp updates on each session access
+- **State Persistence**: Session state survives browser restarts and crashes
+
+**Flow**:
+1. User logs in → receives JWT token
+2. Create session → returns session_id
+3. Store session_id in cookie
+4. On each request → retrieve token from session using session_id
+5. Use token for API authentication
 
 ## Installation
 
@@ -119,47 +139,70 @@ curl -X POST "http://localhost:8100/token" \
 ### Using the Python SDK
 
 ```python
-from client.sdk import HubClient
+from client.sdk import SDKClient
 
 # Initialize client
-hub = HubClient(base_url="http://localhost:8100")
+sdk = SDKClient(base_url="http://localhost:8100")
 
 # Login
-token = hub.login(email="student@example.com", password="password")
+token = sdk.login(email="student@example.com", password="password")
+
+# Create a server-side session
+session_id = sdk.create_session()
+sdk.update_session(session_id, token=token, state={"page": "dashboard"})
 
 # Get current user
-user = hub.get_current_user()
+user = sdk.get_current_user()
 print(f"Logged in as: {user['first_name']} {user['last_name']}")
 
 # Get user's progress
-progress = hub.get_my_progress()
+progress = sdk.get_my_progress()
 print(f"Current rank: {progress['user']['rank']}")
 print(f"Total score: {progress['user']['total_score']}")
 
 # Get all available labs
-labs = hub.get_labs()
+labs = sdk.get_labs()
 print(f"Available labs: {len(labs)}")
 
 # Check if user can access a lab
-access = hub.check_lab_accessible("celestial-navigation")
+access = sdk.check_lab_accessible("celestial-navigation")
 if access['accessible']:
     # Start the lab
-    hub.start_lab("celestial-navigation")
+    sdk.start_lab("celestial-navigation")
     
     # Complete with score
-    hub.complete_lab("celestial-navigation", score=85.5, bonus_points=10.0)
+    sdk.complete_lab("celestial-navigation", score=85.5, bonus_points=10.0)
+
+# Manage sessions
+user_sessions = sdk.get_user_sessions(user['id'])
+print(f"Active sessions: {len(user_sessions)}")
+
+# Logout (deactivates session)
+sdk.delete_session(session_id)
 ```
 
 ### API Endpoints
 
 #### Authentication
+
 - `POST /token` - Login and get JWT token
 - `POST /register` - Register new user account
+- `GET /auth/verify` - Verify token validity
 
 #### User Management
+
 - `GET /users/me` - Get current user profile
 
+#### Session Management
+
+- `POST /sessions/create` - Create a new server-side session
+- `GET /sessions/{session_id}` - Get session data (updates last_activity)
+- `PATCH /sessions/{session_id}` - Update session token or state
+- `DELETE /sessions/{session_id}` - Delete/deactivate session (logout)
+- `GET /sessions/user/{user_id}` - Get all active sessions for a user
+
 #### Labs
+
 - `GET /labs` - List all labs (authenticated)
 - `GET /labs/{lab_ref}` - Get specific lab details
 - `GET /labs/{lab_ref}/accessible` - Check if user can access lab
@@ -168,12 +211,14 @@ if access['accessible']:
 - `DELETE /labs/{lab_ref}` - Delete lab (admin only)
 
 #### Progress
+
 - `GET /progress` - Get user's progress across all labs
 - `GET /progress/lab/{lab_ref}` - Get progress for specific lab
 - `POST /progress/lab/{lab_ref}/start` - Start a lab
 - `POST /progress/lab/{lab_ref}/complete` - Complete a lab with score
 
 #### Admin
+
 - `GET /admin/users/{user_id}/progress` - View any user's progress
 - `PATCH /admin/users/{user_id}/labs/{lab_ref}` - Override lab score
 
@@ -181,9 +226,10 @@ if access['accessible']:
 
 ### Core Entities
 
-- **User**: Students, TAs, instructors, and admins
-- **Lab**: Individual lab activities with prerequisites
-- **UserProgress**: Tracks user progress through labs
+- **User**: Students, instructors, and admins with role-based access
+- **Lab**: Individual lab activities with prerequisites and sequencing
+- **UserProgress**: Tracks user progress through labs with scores and status
+- **UserSession**: Server-side sessions with token storage, state, and expiration (7 days)
 
 ### User Ranks (Gamification)
 
@@ -215,6 +261,9 @@ pytest tests/test_auth.py
 
 # Run specific test
 pytest tests/test_auth.py::test_login_success
+
+# Run session tests
+pytest tests/test_user_sessions.py -v
 ```
 
 ### Code Quality
@@ -240,8 +289,10 @@ novalabs/
 │   │   ├── users.py       # User management
 │   │   ├── labs.py        # Lab CRUD operations
 │   │   ├── progress.py    # Progress tracking
-│   │   └── admin.py       # Admin operations
-│   ├── models.py          # Database models
+│   │   ├── sessions.py    # Session management
+│   │   ├── admin.py       # Admin operations
+│   │   └── system.py      # System/health endpoints
+│   ├── models.py          # Database models (User, Lab, UserProgress, UserSession)
 │   ├── auth.py            # Authentication logic
 │   ├── database.py        # Database setup
 │   ├── dependencies.py    # FastAPI dependencies
@@ -250,17 +301,21 @@ novalabs/
 │   ├── seed_labs.py      # Database seeding
 │   └── config.toml       # Configuration
 ├── client/                # Python SDK
-│   └── sdk.py            # Hub API client
-├── ui/                    # Streamlit dashboards
-│   ├── main.py           # Dashboard app
+│   └── sdk.py            # SDKClient - Hub API client
+├── ui/                    # NiceGUI dashboards
+│   ├── main.py           # Dashboard app entry point
+│   ├── auth_pages.py     # Login/registration pages
 │   ├── user_dash.py      # Student dashboard
-│   └── admin_dash.py     # Admin dashboard
+│   ├── admin_dash.py     # Admin dashboard
+│   └── session_manager.py # Session management singleton
 ├── tests/                 # Test suite
+│   ├── conftest.py       # Shared fixtures
 │   ├── test_auth.py      # Authentication tests
 │   ├── test_labs.py      # Lab endpoint tests
 │   ├── test_progress.py  # Progress tests
 │   ├── test_admin.py     # Admin tests
-│   └── test_sdk.py       # SDK tests
+│   ├── test_user_sessions.py # Session API tests
+│   └── test_sdk.py       # SDK tests (including session wrappers)
 ├── pyproject.toml        # Project configuration
 ├── requirements.txt      # Dependencies
 └── README.md            # This file

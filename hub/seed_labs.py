@@ -255,7 +255,7 @@ def seed_labs():
             session.add(lab)
 
         session.commit()
-        print(f'✓ Seeded {len(LABS)} labs:')
+        print(f'Seeded {len(LABS)} labs:')
         print('  - Earth: 5 labs')
         print('  - Solar System: 5 labs')
         print('  - Stars: 5 labs')

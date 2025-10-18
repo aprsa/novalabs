@@ -9,45 +9,45 @@ import requests
 from typing import Optional, Dict, Any, List
 
 
-class HubClientError(Exception):
-    """Base exception for Hub client errors"""
+class SDKClientError(Exception):
+    """Base exception for SDK client errors"""
     pass
 
 
-class AuthenticationError(HubClientError):
+class AuthenticationError(SDKClientError):
     """Raised when authentication fails"""
     pass
 
 
-class HubClient:
+class SDKClient:
     """
     Client for interacting with NovaLabs Hub API
 
     Usage:
-        hub = HubClient(base_url="http://localhost:8100")
+        sdk = SDKClient(base_url="http://localhost:8100")
 
         # Authenticate
-        token = hub.login(email="user@example.com", password="password")
+        token = sdk.login(email="user@example.com", password="password")
 
         # Get current user
-        user = hub.get_current_user()
+        user = sdk.get_current_user()
 
         # Get user's progress and rank
-        progress = hub.get_my_progress()
+        progress = sdk.get_my_progress()
 
         # Check if user can access a lab
-        can_access = hub.check_lab_accessible(lab_ref="phoebe")
+        can_access = sdk.check_lab_accessible(lab_ref="phoebe")
 
         # Start a lab
-        hub.start_lab(lab_ref="phoebe")
+        sdk.start_lab(lab_ref="phoebe")
 
         # Complete a lab with score
-        hub.complete_lab(lab_ref="phoebe", score=85.5, bonus_points=10.0)
+        sdk.complete_lab(lab_ref="phoebe", score=85.5, bonus_points=10.0)
     """
 
     def __init__(self, base_url: str, token: Optional[str] = None):
         """
-        Initialize Hub client
+        Initialize SDK client
 
         Args:
             base_url: Base URL of Hub API (e.g., http://localhost:8100)
@@ -73,7 +73,7 @@ class HubClient:
             Response JSON as dictionary
 
         Raises:
-            HubClientError: If request fails
+            SDKClientError: If request fails
         """
         url = f'{self.base_url}/{endpoint.lstrip("/")}'
 
@@ -86,8 +86,8 @@ class HubClient:
             if hasattr(e, 'response') and hasattr(e.response, 'status_code'):
                 if e.response.status_code == 401:
                     raise AuthenticationError('Authentication failed or token expired')
-                raise HubClientError(f'HTTP {e.response.status_code}: {e.response.text}')
-            raise HubClientError(f'Request failed: {str(e)}')
+                raise SDKClientError(f'HTTP {e.response.status_code}: {e.response.text}')
+            raise SDKClientError(f'Request failed: {str(e)}')
 
     def login(self, email: str, password: str) -> str:
         """
@@ -108,7 +108,7 @@ class HubClient:
             self.token = response['access_token']
             self.session.headers['Authorization'] = f'Bearer {self.token}'
             return self.token
-        except HubClientError:
+        except SDKClientError:
             raise AuthenticationError("Invalid email or password")
 
     def register(self, email: str, password: str, first_name: str, last_name: str, institution: Optional[str] = None) -> Dict[str, Any]:
@@ -126,7 +126,7 @@ class HubClient:
             Dictionary with user information
 
         Raises:
-            HubClientError: If registration fails
+            SDKClientError: If registration fails
         """
         return self._request('POST', '/register', json={
             'email': email,
@@ -173,7 +173,7 @@ class HubClient:
                 self.session.headers['Authorization'] = old_header
 
             return True
-        except (AuthenticationError, HubClientError):
+        except (AuthenticationError, SDKClientError):
             if old_header:
                 self.session.headers['Authorization'] = old_header
             return False
@@ -250,7 +250,7 @@ class HubClient:
             Created lab dictionary
 
         Raises:
-            HubClientError: If registration fails
+            SDKClientError: If registration fails
         """
         return self._request('POST', '/labs', json={
             'ref': ref,
@@ -301,7 +301,7 @@ class HubClient:
             UserProgress record
 
         Raises:
-            HubClientError: If prerequisites not met or lab doesn't exist
+            SDKClientError: If prerequisites not met or lab doesn't exist
         """
         return self._request('POST', f'/progress/lab/{lab_ref}/start')
 
@@ -320,7 +320,7 @@ class HubClient:
             Updated UserProgress with new rank info
 
         Raises:
-            HubClientError: If lab not started or invalid score
+            SDKClientError: If lab not started or invalid score
         """
         return self._request('POST', f'/progress/lab/{lab_ref}/complete', json={
             'score': score,
@@ -368,51 +368,77 @@ class HubClient:
             json=data
         )
 
+    def create_session(self) -> str:
+        """Create a server-side session"""
+        response = self._request('POST', '/sessions/create')
+        return response['session_id']
+
+    def get_session(self, session_id: str) -> Dict[str, Any]:
+        """Get session data from server"""
+        return self._request('GET', f'/sessions/{session_id}')
+
+    def update_session(self, session_id: str, token: Optional[str] = None, state: Optional[dict] = None):
+        """Update session on server"""
+        data = {}
+        if token:
+            data['token'] = token
+        if state:
+            data['state'] = state
+        return self._request('PATCH', f'/sessions/{session_id}', json=data)
+
+    def delete_session(self, session_id: str):
+        """Delete session (logout)"""
+        return self._request('DELETE', f'/sessions/{session_id}')
+
+    def get_user_sessions(self, user_id: int) -> List[Dict[str, Any]]:
+        """Get all sessions for a user"""
+        return self._request('GET', f'/sessions/user/{user_id}')
+
 
 # Example usage
 if __name__ == "__main__":
     # Initialize client
-    hub = HubClient(base_url="http://localhost:8100")
+    sdk = SDKClient(base_url="http://localhost:8100")
 
     # Login
     try:
-        token = hub.login(email="student@example.com", password="password")
-        print("✓ Logged in successfully")
+        token = sdk.login(email="student@example.com", password="password")
+        print("Logged in successfully")
         print(f"  Token: {token[:20]}...")
 
         # Get current user
-        user = hub.get_current_user()
-        print(f"✓ Current user: {user['first_name']} {user['last_name']}")
+        user = sdk.get_current_user()
+        print(f"Current user: {user['first_name']} {user['last_name']}")
         print(f"  Role: {user['role']}")
 
         # Get my progress
-        progress = hub.get_my_progress()
-        print(f"✓ Current rank: {progress['user']['rank']}")
+        progress = sdk.get_my_progress()
+        print(f"Current rank: {progress['user']['rank']}")
         print(f"  Total score: {progress['user']['total_score']}")
         print(f"  Total bonus: {progress['user']['total_bonus_points']}")
 
         # Get all labs
-        labs = hub.get_labs()
-        print(f"✓ Available labs: {len(labs)}")
+        labs = sdk.get_labs()
+        print(f"Available labs: {len(labs)}")
 
         # Check if can access a specific lab
         lab_ref = "celestial-navigation"
-        access = hub.check_lab_accessible(lab_ref)
+        access = sdk.check_lab_accessible(lab_ref)
         if access['accessible']:
-            print(f"✓ Can access '{lab_ref}' (status: {access['status']})")
+            print(f"Can access '{lab_ref}' (status: {access['status']})")
 
             # Start the lab (if not already started)
             if access['status'] == 'unlocked':
-                hub.start_lab(lab_ref)
+                sdk.start_lab(lab_ref)
                 print(f"  Started lab '{lab_ref}'")
 
             # Complete the lab with score
-            # hub.complete_lab(lab_ref, score=85.5, bonus_points=10.0)
+            # sdk.complete_lab(lab_ref, score=85.5, bonus_points=10.0)
             # print(f"  Completed lab with score 85.5 + 10 bonus")
         else:
-            print(f"✗ Cannot access '{lab_ref}': {access.get('missing_prerequisites', [])}")
+            print(f"Cannot access '{lab_ref}': {access.get('missing_prerequisites', [])}")
 
     except AuthenticationError as e:
-        print(f"✗ Authentication failed: {e}")
-    except HubClientError as e:
-        print(f"✗ Error: {e}")
+        print(f"Authentication failed: {e}")
+    except SDKClientError as e:
+        print(f"Error: {e}")

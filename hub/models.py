@@ -121,6 +121,26 @@ class UserProgress(SQLModel, table=True):
         table_args = {'sqlite_autoincrement': True}
 
 
+class UserSession(SQLModel, table=True):
+    """Server-side session storage for UI state"""
+    __tablename__ = 'user_sessions'
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    session_id: str = Field(unique=True, index=True)  # Unique session identifier
+    user_id: int = Field(foreign_key='users.id', index=True)
+    token: str  # JWT token
+
+    # Session state (can store UI state, progress, etc.)
+    state: Optional[str] = None  # JSON blob for arbitrary state
+
+    # Metadata
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_activity: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    expires_at: datetime  # Session expiration
+
+    is_active: bool = Field(default=True)
+
+
 # Future enhancement: Achievement/Badge system
 # class Achievement(SQLModel, table=True):
 #     """Achievements/badges that users can earn"""

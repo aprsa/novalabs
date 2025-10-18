@@ -134,7 +134,7 @@ def main():
             )
 
             print("\n" + "=" * 60)
-            print("✓ Admin user created successfully!")
+            print("Admin user created successfully!")
             print(f"  Email: {admin.email}")
             print(f"  Name: {admin.first_name} {admin.last_name}")
             if admin.institution:

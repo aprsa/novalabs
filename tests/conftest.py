@@ -8,7 +8,7 @@ from sqlmodel.pool import StaticPool
 import json
 import base64
 
-from client.sdk import HubClient
+from client.sdk import SDKClient
 from hub.main import app
 from hub.database import get_session
 from hub.models import User, Lab, UserRole, UserRank
@@ -198,6 +198,6 @@ def admin_client_fixture(client, test_admin):
 @pytest.fixture(name="sdk_client")
 def sdk_client_fixture(client):
     """Create SDK client pointing to test server"""
-    hub = HubClient(base_url="http://testserver")
-    hub.session = client
-    return hub
+    sdk = SDKClient(base_url="http://testserver")
+    sdk.session = client
+    return sdk
