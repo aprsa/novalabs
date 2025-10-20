@@ -9,6 +9,7 @@ from fastapi import Request
 import auth_pages
 import user_dash
 import admin_dash
+import cosmic_dash
 
 
 # Authentication routes
@@ -28,6 +29,11 @@ def route_dashboard(request: Request):
     return user_dash.student_dashboard(request)
 
 
+@ui.page('/cosmic')
+def route_cosmic_dashboard(request: Request):
+    return cosmic_dash.cosmic_dashboard(request)
+
+
 # Admin routes
 @ui.page('/admin')
 def route_admin_dashboard(request: Request):
@@ -45,6 +51,11 @@ def route_admin_labs(request: Request):
 
 
 if __name__ in {'__main__', '__mp_main__'}:
+    # Mount static files directory
+    from pathlib import Path
+    from nicegui import app
+    app.add_static_files('/assets', Path(__file__).parent / 'assets')
+
     ui.run(
         title='NovaLabs Hub',
         port=8101,

@@ -175,7 +175,7 @@ def test_progress_shows_correct_status(authenticated_client, test_labs, test_use
     response = authenticated_client.get("/progress")
     data = response.json()
 
-    labs = {lab['lab']['ref']: lab['progress'] for lab in data['labs']}
+    labs = {lab['meta']['ref']: lab['progress'] for lab in data['labs']}
 
     assert labs['lab-1']['status'] == "completed"
     assert labs['lab-2']['status'] == "in_progress"

@@ -112,62 +112,62 @@ def get_my_progress(session: Session = Depends(get_session), current_user: User 
             status = ProgressStatus.UNLOCKED if can_access else ProgressStatus.LOCKED
 
             labs_with_progress.append({
-                "lab": {
-                    "id": lab.id,
-                    "ref": lab.ref,
-                    "name": lab.name,
-                    "description": lab.description,
-                    "sequence_order": lab.sequence_order,
-                    "category": lab.category,
-                    "max_score": lab.max_score,
-                    "has_bonus_challenge": lab.has_bonus_challenge,
-                    "max_bonus_points": lab.max_bonus_points,
-                    "ui_url": lab.ui_url
+                'meta': {
+                    'id': lab.id,
+                    'ref': lab.ref,
+                    'name': lab.name,
+                    'description': lab.description,
+                    'sequence_order': lab.sequence_order,
+                    'category': lab.category,
+                    'max_score': lab.max_score,
+                    'has_bonus_challenge': lab.has_bonus_challenge,
+                    'max_bonus_points': lab.max_bonus_points,
+                    'ui_url': lab.ui_url
                 },
-                "progress": {
-                    "status": status,
-                    "score": None,
-                    "bonus_points": 0.0,
-                    "attempts": 0,
-                    "started_at": None,
-                    "completed_at": None
+                'progress': {
+                    'status': status,
+                    'score': None,
+                    'bonus_points': 0.0,
+                    'attempts': 0,
+                    'started_at': None,
+                    'completed_at': None
                 }
             })
         else:
             labs_with_progress.append({
-                "lab": {
-                    "id": lab.id,
-                    "ref": lab.ref,
-                    "name": lab.name,
-                    "description": lab.description,
-                    "sequence_order": lab.sequence_order,
-                    "category": lab.category,
-                    "max_score": lab.max_score,
-                    "has_bonus_challenge": lab.has_bonus_challenge,
-                    "max_bonus_points": lab.max_bonus_points,
-                    "ui_url": lab.ui_url
+                'meta': {
+                    'id': lab.id,
+                    'ref': lab.ref,
+                    'name': lab.name,
+                    'description': lab.description,
+                    'sequence_order': lab.sequence_order,
+                    'category': lab.category,
+                    'max_score': lab.max_score,
+                    'has_bonus_challenge': lab.has_bonus_challenge,
+                    'max_bonus_points': lab.max_bonus_points,
+                    'ui_url': lab.ui_url
                 },
-                "progress": {
-                    "status": progress.status,
-                    "score": progress.score,
-                    "bonus_points": progress.bonus_points,
-                    "attempts": progress.attempts,
-                    "started_at": progress.started_at.isoformat() if progress.started_at else None,
-                    "completed_at": progress.completed_at.isoformat() if progress.completed_at else None
+                'progress': {
+                    'status': progress.status,
+                    'score': progress.score,
+                    'bonus_points': progress.bonus_points,
+                    'attempts': progress.attempts,
+                    'started_at': progress.started_at.isoformat() if progress.started_at else None,
+                    'completed_at': progress.completed_at.isoformat() if progress.completed_at else None
                 }
             })
 
     return {
-        "user": {
-            "id": current_user.id,
-            "email": current_user.email,
-            "first_name": current_user.first_name,
-            "last_name": current_user.last_name,
-            "rank": current_user.rank,
-            "total_score": current_user.total_score,
-            "total_bonus_points": current_user.total_bonus_points
+        'user': {
+            'id': current_user.id,
+            'email': current_user.email,
+            'first_name': current_user.first_name,
+            'last_name': current_user.last_name,
+            'rank': current_user.rank,
+            'total_score': current_user.total_score,
+            'total_bonus_points': current_user.total_bonus_points
         },
-        "labs": labs_with_progress
+        'labs': labs_with_progress
     }
 
 
@@ -176,7 +176,7 @@ def get_lab_progress(lab_ref: str, session: Session = Depends(get_session), curr
     """Get user's progress for a specific lab"""
     lab = session.exec(select(Lab).where(Lab.ref == lab_ref)).first()
     if not lab:
-        raise HTTPException(status_code=404, detail="Lab not found")
+        raise HTTPException(status_code=404, detail='Lab not found')
 
     progress = session.exec(
         select(UserProgress).where(
@@ -191,34 +191,34 @@ def get_lab_progress(lab_ref: str, session: Session = Depends(get_session), curr
         status = ProgressStatus.UNLOCKED if can_access else ProgressStatus.LOCKED
 
         return {
-            "lab": {
-                "ref": lab.ref,
-                "name": lab.name,
-                "sequence_order": lab.sequence_order,
-                "category": lab.category
+            'meta': {
+                'ref': lab.ref,
+                'name': lab.name,
+                'sequence_order': lab.sequence_order,
+                'category': lab.category
             },
-            "progress": {
-                "status": status,
-                "score": None,
-                "bonus_points": 0.0,
-                "attempts": 0
+            'progress': {
+                'status': status,
+                'score': None,
+                'bonus_points': 0.0,
+                'attempts': 0
             }
         }
 
     return {
-        "lab": {
-            "ref": lab.ref,
-            "name": lab.name,
-            "sequence_order": lab.sequence_order,
-            "category": lab.category
+        'meta': {
+            'ref': lab.ref,
+            'name': lab.name,
+            'sequence_order': lab.sequence_order,
+            'category': lab.category
         },
-        "progress": {
-            "status": progress.status,
-            "score": progress.score,
-            "bonus_points": progress.bonus_points,
-            "attempts": progress.attempts,
-            "started_at": progress.started_at.isoformat() if progress.started_at else None,
-            "completed_at": progress.completed_at.isoformat() if progress.completed_at else None
+        'progress': {
+            'status': progress.status,
+            'score': progress.score,
+            'bonus_points': progress.bonus_points,
+            'attempts': progress.attempts,
+            'started_at': progress.started_at.isoformat() if progress.started_at else None,
+            'completed_at': progress.completed_at.isoformat() if progress.completed_at else None
         }
     }
 
@@ -228,11 +228,11 @@ def start_lab(lab_ref: str, session: Session = Depends(get_session), current_use
     """Start a lab (marks as in_progress, increments attempts)"""
     lab = session.exec(select(Lab).where(Lab.ref == lab_ref)).first()
     if not lab:
-        raise HTTPException(status_code=404, detail="Lab not found")
+        raise HTTPException(status_code=404, detail='Lab not found')
 
     # Check prerequisites
     if not prerequisites_met(current_user.id, lab, session):
-        raise HTTPException(status_code=403, detail="Prerequisites not met")
+        raise HTTPException(status_code=403, detail='Prerequisites not met')
 
     # Get or create progress record
     progress = session.exec(
@@ -346,11 +346,11 @@ def complete_lab(lab_ref: str, completion_data: dict, session: Session = Depends
     session.refresh(current_user)
 
     return {
-        "status": "completed",
-        "lab_ref": lab_ref,
-        "score": progress.score,
-        "bonus_points": progress.bonus_points,
-        "completed_at": progress.completed_at.isoformat(),
-        "user_rank": current_user.rank,
-        "user_total_score": current_user.total_score
+        'status': 'completed',
+        'lab_ref': lab_ref,
+        'score': progress.score,
+        'bonus_points': progress.bonus_points,
+        'completed_at': progress.completed_at.isoformat(),
+        'user_rank': current_user.rank,
+        'user_total_score': current_user.total_score
     }

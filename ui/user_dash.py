@@ -21,6 +21,7 @@ def student_dashboard(request: Request):
             ui.label('🔭 NovaLabs').classes('text-xl font-bold')
 
         with ui.row().classes('items-center gap-4'):
+            ui.button('🌌 Cosmic View', on_click=lambda: ui.navigate.to('/cosmic')).props('flat color=primary')
             ui.label(f"{user['first_name']} {user['last_name']}").classes('text-sm')
             ui.button('Logout', on_click=lambda: logout(request)).props('flat dense')
 
@@ -49,7 +50,7 @@ def student_dashboard(request: Request):
                 else:
                     with ui.grid(columns=2).classes('w-full gap-4'):
                         for item in labs_with_progress:
-                            lab = item['lab']
+                            lab = item['meta']
                             progress = item.get('progress')
                             
                             with ui.card().classes('hover:shadow-lg transition-shadow'):
