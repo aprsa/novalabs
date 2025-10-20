@@ -89,6 +89,110 @@ def cosmic_dashboard(request: Request):
                 50% { opacity: 1; }
             }
 
+            #sun {
+                width: 120px;
+                height: 120px;
+                border-radius: 50%;
+                background: radial-gradient(circle at center,
+                    rgba(255, 240, 200, 0.9) 0%,
+                    rgba(255, 220, 150, 0.7) 15%,
+                    rgba(255, 200, 100, 0.5) 30%,
+                    rgba(200, 180, 120, 0.3) 50%,
+                    rgba(150, 140, 110, 0.15) 70%,
+                    transparent 100%
+                );
+                box-shadow:
+                    0 0 30px rgba(255, 220, 150, 0.4),
+                    0 0 60px rgba(255, 200, 100, 0.2),
+                    inset 0 0 20px rgba(255, 240, 200, 0.3);
+            }
+
+            #sun::before {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 15px;
+                height: 15px;
+                border-radius: 50%;
+                background: radial-gradient(circle at center,
+                    #ffeb99 0%,
+                    #ffd966 50%,
+                    #ffcc33 100%
+                );
+                z-index: 1;
+            }
+
+            #orbiting-mercury {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background: radial-gradient(circle at 30% 30%, #b8b8b8, #6a6a6a);
+                box-shadow: 
+                    inset -2px -2px 5px rgba(0,0,0,0.6),
+                    0 0 8px rgba(184, 184, 184, 0.4);
+                --orbit-radius: 60px;
+                --start-angle: 240deg;
+                animation: inner-orbit 24s linear infinite;
+                position: relative;
+                z-index: -1;
+            }
+
+            #orbiting-venus {
+                width: 15px;
+                height: 15px;
+                border-radius: 50%;
+                background: radial-gradient(circle at 30% 30%, #e3c16f, #a67c2d);
+                box-shadow: 
+                    inset -3px -3px 6px rgba(0,0,0,0.5),
+                    0 0 10px rgba(227, 193, 111, 0.4);
+                --orbit-radius: 250px;
+                --start-angle: 120deg;
+                animation: inner-orbit 90s linear infinite;
+                position: relative;
+                z-index: -1;
+            }
+
+            #orbiting-mars {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: radial-gradient(circle at 30% 30%, #d14f4f, #8a2a2a);
+                box-shadow:
+                    inset -2px -2px 5px rgba(0,0,0,0.6),
+                    0 0 8px rgba(209, 79, 79, 0.4);
+                --orbit-radius: 950px;
+                --start-angle: 60deg;
+                animation: inner-orbit 180s linear infinite;
+                position: relative;
+                z-index: -1;
+            }
+
+            #orbiting-jupiter {
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: radial-gradient(circle at 30% 30%, #f5deb3, #a0522d);
+                box-shadow:
+                    inset -4px -4px 7px rgba(0,0,0,0.5),
+                    0 0 12px rgba(245, 222, 179, 0.4);
+                --orbit-radius: 1300px;
+                --start-angle: 35deg;
+                animation: inner-orbit 400s linear infinite;
+                position: relative;
+                z-index: -1;
+            }
+
+            @keyframes inner-orbit {
+                0% {
+                    transform: rotate(var(--start-angle)) translateX(var(--orbit-radius)) rotate(calc(-1 * var(--start-angle))) rotateX(15deg);
+                }
+                100% {
+                    transform: rotate(calc(var(--start-angle) - 360deg)) translateX(var(--orbit-radius)) rotate(calc(360deg - var(--start-angle))) rotateX(15deg);
+                }
+            }
+
             #earth {
                 width: 600px;
                 height: 600px;
@@ -103,7 +207,7 @@ def cosmic_dashboard(request: Request):
                     0 0 96px 24px rgba(100, 180, 255, 0.2),
                     0 0 128px 32px rgba(100, 180, 255, 0.1);
                 animation-name: rotate-earth;
-                animation-duration: 600s;
+                animation-duration: 300s;
                 animation-iteration-count: infinite;
                 animation-timing-function: linear;
             }
@@ -113,6 +217,7 @@ def cosmic_dashboard(request: Request):
             }
 
             #mars {
+                display: none;  /* temporarily hidden */
                 width: 150px;
                 height: 150px;
                 border-radius: 50%;
@@ -131,6 +236,7 @@ def cosmic_dashboard(request: Request):
             }
 
             #jupiter {
+                display: none;
                 width: 221px;
                 height: 221px;
                 border-radius: 50%;
@@ -204,15 +310,17 @@ def cosmic_dashboard(request: Request):
 
             .lab-path {
                 stroke: #4b5563;
-                stroke-width: 2;
+                stroke-width: 2px;
                 fill: none;
-                stroke-dasharray: 5, 5;
+                stroke-dasharray: 8, 4;
                 opacity: 0.5;
             }
 
             .lab-path-active {
                 stroke: #60a5fa;
-                stroke-width: 3;
+                stroke-width: 3px;
+                fill: none;
+                stroke-dasharray: 8, 4;
                 opacity: 0.8;
                 animation: flow 2s linear infinite;
             }
@@ -221,21 +329,11 @@ def cosmic_dashboard(request: Request):
                 to { stroke-dashoffset: -10; }
             }
 
-            .galaxy {
-                width: 200px;
-                height: 200px;
-                border-radius: 50%;
-                background: radial-gradient(ellipse at center, 
-                    rgba(147, 51, 234, 0.8) 0%,
-                    rgba(124, 58, 237, 0.6) 20%,
-                    rgba(99, 102, 241, 0.4) 40%,
-                    rgba(59, 130, 246, 0.2) 60%,
-                    transparent 80%
-                );
-                animation: rotate 30s linear infinite reverse;
-                box-shadow: 
-                    0 0 60px rgba(147, 51, 234, 0.6),
-                    inset 0 0 40px rgba(147, 51, 234, 0.4);
+            #andromeda {
+                width: 260px;
+                height: 133px;
+                background: url(/assets/andromeda_50.png);
+                background-size: cover;
             }
 
             .planet {
@@ -257,24 +355,6 @@ def cosmic_dashboard(request: Request):
                     inset -20px -20px 30px rgba(0,0,0,0.3),
                     0 0 30px rgba(244, 228, 193, 0.5);
                 position: relative;
-            }
-
-            .saturn::after {
-                content: '';
-                position: absolute;
-                top: 50%;
-                left: -30%;
-                right: -30%;
-                height: 8px;
-                background: linear-gradient(90deg, 
-                    transparent 0%,
-                    rgba(244, 228, 193, 0.8) 20%,
-                    rgba(244, 228, 193, 0.4) 50%,
-                    rgba(244, 228, 193, 0.8) 80%,
-                    transparent 100%
-                );
-                transform: translateY(-50%) rotateX(75deg);
-                border-radius: 50%;
             }
 
             .info-panel {
@@ -345,8 +425,10 @@ def create_cosmic_journey(client, user, request):
         svg_width = "100%"
         svg_height = "100%"
 
-        with ui.element('svg').props(f'width="{svg_width}" height="{svg_height}" viewBox="0 0 1920 1080"').style(
-            'position: absolute; top: 0; left: 0;'
+        with ui.element('svg').props(
+            f'width="{svg_width}" height="{svg_height}" viewBox="0 0 100 100" preserveAspectRatio="none"'
+        ).style(
+            'position: absolute; top: 0; left: 0; z-index: 20;'
         ):
             # Define the journey path coordinates
             positions = calculate_lab_positions(len(sorted_labs))
@@ -360,43 +442,58 @@ def create_cosmic_journey(client, user, request):
                 current_status = sorted_labs[i].get('progress', {}).get('status', 'locked')
                 path_class = 'lab-path-active' if current_status == 'completed' else 'lab-path'
 
+                # Create curved path with control point
+                control_x = (x1 + x2) / 2
+                control_y = (y1 + y2) / 2 - 3  # Adjusted for percentage scale
+                
                 ui.element('path').props(
-                    f'd="M {x1} {y1} Q {(x1+x2)/2} {(y1+y2)/2 - 50} {x2} {y2}"'
+                    f'd="M {x1} {y1} Q {control_x} {control_y} {x2} {y2}"'
                 ).classes(path_class)
 
         # Overlay container for interactive elements
         with ui.element('div').style('position: relative; width: 100%; height: 100%;'):
+            # Sun:
+            with ui.element('div').style(
+                'position: absolute; top: 5%; left: 5%; z-index: 10;'
+            ):
+                ui.html('<div id="sun"></div>', sanitize=False)
+
+            # Planets:
+            with ui.element('div').style(
+                'position: absolute; top: calc(5% + 60px); left: calc(5% + 60px); z-index: 5; perspective: 1000px; transform-style: preserve-3d;'
+            ):
+                ui.html('<div id="orbiting-mercury"></div>', sanitize=False)
+                ui.html('<div id="orbiting-venus"></div>', sanitize=False)
+                ui.html('<div id="orbiting-mars"></div>', sanitize=False)
+                ui.html('<div id="orbiting-jupiter"></div>', sanitize=False)
+
             # Earth:
             with ui.element('div').style(
-                'position: absolute; bottom: -150px; left: -150px; z-index: 10;'
+                'position: absolute; bottom: -170px; left: -170px; z-index: 10;'
             ):
                 with ui.column().classes('items-center gap-2'):
                     ui.html('<div id="earth"></div>', sanitize=False)
 
-            # Planets in the middle region
-            with ui.element('div').style(
-                'position: absolute; top: 22%; left: 28%; z-index: 5;'
-            ):
-                ui.html('<div style="transform: rotate(25deg);"><div id="mars"></div></div>', sanitize=False)
+            # Mars (hidden, middle region)
+            # with ui.element('div').style(
+            #     'position: absolute; top: 22%; left: 28%; z-index: 5;'
+            # ):
+            #     ui.html('<div style="transform: rotate(25deg);"><div id="mars"></div></div>', sanitize=False)
 
-            with ui.element('div').style(
-                'position: absolute; top: 5%; left: 47%; z-index: 5;'
-            ):
-                ui.html('<div style="transform: rotate(-15deg);"><div id="jupiter"></div></div>', sanitize=False)
+            # Jupiter (hidden, middle region)
+            # with ui.element('div').style(
+            #     'position: absolute; top: 5%; left: 47%; z-index: 5;'
+            # ):
+            #     ui.html('<div style="transform: rotate(-15deg);"><div id="jupiter"></div></div>', sanitize=False)
 
+            # Galaxy (top right corner)
             with ui.element('div').style(
-                'position: absolute; top: 50%; left: 65%; z-index: 5;'
-            ):
-                ui.element('div').classes('planet saturn')
-
-            # Galaxy in top right
-            with ui.element('div').style(
-                'position: absolute; top: 50px; right: 50px; z-index: 10;'
+                'position: absolute; top: 3%; right: 3%; z-index: 1;'
             ):
                 with ui.column().classes('items-center gap-2'):
-                    ui.element('div').classes('galaxy')
-                    ui.label('Deep Space').classes('text-white text-lg font-bold')
-                    ui.label('Advanced Labs').classes('text-purple-300 text-sm')
+                    ui.html('<div id="andromeda"></div>', sanitize=False)
+                    # ui.label('Deep Space').classes('text-white text-lg font-bold')
+                    # ui.label('Advanced Labs').classes('text-purple-300 text-sm')
 
             # Lab nodes
             for i, lab in enumerate(sorted_labs):
@@ -412,28 +509,29 @@ def create_cosmic_journey(client, user, request):
 
 
 def calculate_lab_positions(num_labs):
-    """Calculate positions for labs along a cosmic journey path"""
+    """Calculate positions for labs along a cosmic journey path as percentages"""
     positions = []
 
     # Define the journey path from bottom-left to top-right
     # Earth region (bottom left) -> Solar system (middle) -> Galaxy (top right)
+    # Using percentages (0-100) for responsive positioning
 
     for i in range(num_labs):
         progress = i / max(1, num_labs - 1) if num_labs > 1 else 0
 
-        # Create a curved path
+        # Create a curved path using percentages
         if progress < 0.33:  # Earth to inner solar system
             t = progress / 0.33
-            x = 200 + (t * 400)
-            y = 850 - (t * 250)
+            x = 15 + (t * 20)  # 15% to 35%
+            y = 85 - (t * 25)  # 85% to 60%
         elif progress < 0.66:  # Inner to outer solar system
             t = (progress - 0.33) / 0.33
-            x = 600 + (t * 600)
-            y = 600 - (t * 150)
+            x = 35 + (t * 30)  # 35% to 65%
+            y = 60 - (t * 15)  # 60% to 45%
         else:  # Outer solar system to deep space
             t = (progress - 0.66) / 0.34
-            x = 1200 + (t * 450)
-            y = 450 - (t * 200)
+            x = 65 + (t * 25)  # 65% to 90%
+            y = 45 - (t * 20)  # 45% to 25%
 
         positions.append((x, y))
 
@@ -452,11 +550,14 @@ def create_lab_node(lab, x, y, client, request):
     # Determine status class
     status_class = f'lab-{status}'
 
-    # Create clickable node
+    # Create clickable node (using percentage positioning)
     with ui.element('div').style(
-        f'position: absolute; left: {x}px; top: {y}px; transform: translate(-50%, -50%); z-index: 50;'
+        f'position: absolute; left: {x}%; top: {y}%; transform: translate(-50%, -50%); z-index: 50;'
     ):
-        with ui.element('div').classes(f'lab-node {status_class}').on('click', lambda lab=lab, client=client, request=request: handle_lab_click(lab, client, request)):
+        with ui.element('div').classes(f'lab-node {status_class}').on(
+            'click',
+            lambda lab=lab, client=client, request=request: handle_lab_click(lab, client, request)
+        ):
             with ui.column().classes('items-center gap-1 p-2'):
                 # Lab number/icon
                 sequence = lab_meta.get('sequence_order', 0)
@@ -481,7 +582,7 @@ def create_lab_node(lab, x, y, client, request):
 def create_info_panel(user, progress_data):
     """Create the information panel at the bottom"""
     with ui.element('div').style(
-        'position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100; min-width: 800px;'
+        'position: absolute; bottom: 2%; right: 3%; z-index: 100; min-width: 40%; max-width: 50%;'
     ):
         with ui.element('div').classes('info-panel'):
             with ui.row().classes('items-center justify-between gap-8'):
