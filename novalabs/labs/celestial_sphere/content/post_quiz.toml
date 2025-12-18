@@ -1,0 +1,22 @@
+[quiz]
+instructions = "Reflect on your Stellarium measurements and lab findings."
+
+[[questions]]
+text = "Why is a sidereal day shorter than a solar day by about four minutes?"
+options = [
+    "Earth must rotate slightly more to face the Sun again due to its orbit",
+    "Earth spins faster at night",
+    "The Moon slows Earth's rotation",
+    "Daylight saving time adjustments"
+]
+correct = 0
+
+[[questions]]
+text = "Which constellations remain circumpolar for an observer at 40 degrees north?"
+options = [
+    "Those whose entire path stays above the horizon",
+    "Only the zodiac constellations",
+    "Constellations near the celestial equator",
+    "All constellations visible in winter"
+]
+correct = 0

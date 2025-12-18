@@ -1,0 +1,18 @@
+[server]
+host = '0.0.0.0'
+port = 8100
+
+[database]
+url = "sqlite://data/novalabs.db"
+
+[security]
+secret_key = "your-secret-key-change-this-in-production"
+algorithm = "HS256"
+access_token_expire_minutes = 180
+
+[cors]
+origins = ["http://localhost:8100", "http://localhost:8101"]
+debug = true
+
+[settings]
+disable_lab_dependency_checks = true

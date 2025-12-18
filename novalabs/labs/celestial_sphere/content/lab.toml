@@ -1,0 +1,20 @@
+[lab]
+slug = "celestial_sphere"
+title = "Celestial Sphere"
+description = "Understand Earth's rotation and revolution, and their impact on the night sky."
+version = "0.1.0"
+passing_score = 8
+
+[briefing]
+file = "briefing.md"
+
+[pre_quiz]
+file = "pre_quiz.toml"
+
+[post_quiz]
+file = "post_quiz.toml"
+
+# No exercises defined yet. Add entries like:
+# [[exercises]]
+# dir = "01_example_exercise"
+# max_points = 20.0

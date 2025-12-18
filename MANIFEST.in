@@ -1,10 +1,24 @@
+# Documentation and licensing
 include README.md
-include ADMIN_CREATION.md
 include LICENSE
 include requirements.txt
-include hub/config.toml
-recursive-include hub/data .gitkeep
+include config.toml
+
+# Data directories
+recursive-include data .gitkeep
+recursive-include novalabs/hub/dashboards *
+
+# UI assets
+recursive-include novalabs/ui/assets *
+
+# Lab data and components
+recursive-include novalabs/labs *
+
+# Exclude build and test artifacts
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 recursive-exclude tests *
 recursive-exclude htmlcov *
+recursive-exclude dist *
+recursive-exclude build *
+recursive-exclude *.egg-info *

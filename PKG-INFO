@@ -1,3 +1,61 @@
+Metadata-Version: 2.4
+Name: novalabs
+Version: 0.1.0
+Summary: NovaLabs - Interactive astronomy lab platform for education
+Project-URL: Homepage, https://github.com/aprsa/novalabs
+Project-URL: Repository, https://github.com/aprsa/novalabs
+Project-URL: Documentation, https://github.com/aprsa/novalabs/blob/main/README.md
+Project-URL: Bug Tracker, https://github.com/aprsa/novalabs/issues
+Author-email: Andrej Prša <aprsa@villanova.edu>
+Maintainer-email: Andrej Prša <aprsa@villanova.edu>
+License: AGPL-3.0-only
+License-File: LICENSE
+Keywords: astronomy,education,fastapi,interactive-labs,lab-management,learning-management,nicegui
+Classifier: Development Status :: 3 - Alpha
+Classifier: Framework :: FastAPI
+Classifier: Intended Audience :: Education
+Classifier: License :: OSI Approved :: GNU Affero General Public License v3
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Education
+Classifier: Topic :: Scientific/Engineering :: Astronomy
+Requires-Python: >=3.11
+Requires-Dist: bcrypt>=4.0.0
+Requires-Dist: fastapi>=0.104.0
+Requires-Dist: nicegui>=1.4.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: python-jose[cryptography]>=3.3.0
+Requires-Dist: python-multipart>=0.0.6
+Requires-Dist: requests>=2.31.0
+Requires-Dist: toml>=0.10.2
+Requires-Dist: tortoise-orm>=0.20.0
+Requires-Dist: uvicorn[standard]>=0.24.0
+Provides-Extra: all
+Requires-Dist: black>=23.0.0; extra == 'all'
+Requires-Dist: httpx>=0.25.0; extra == 'all'
+Requires-Dist: mkdocs-material>=9.0.0; extra == 'all'
+Requires-Dist: mkdocs>=1.5.0; extra == 'all'
+Requires-Dist: mkdocstrings[python]>=0.24.0; extra == 'all'
+Requires-Dist: mypy>=1.7.0; extra == 'all'
+Requires-Dist: pytest-asyncio>=0.23.0; extra == 'all'
+Requires-Dist: pytest-cov>=4.1.0; extra == 'all'
+Requires-Dist: pytest>=8.0.0; extra == 'all'
+Requires-Dist: ruff>=0.1.0; extra == 'all'
+Provides-Extra: dev
+Requires-Dist: black>=23.0.0; extra == 'dev'
+Requires-Dist: httpx>=0.25.0; extra == 'dev'
+Requires-Dist: mypy>=1.7.0; extra == 'dev'
+Requires-Dist: pytest-asyncio>=0.23.0; extra == 'dev'
+Requires-Dist: pytest-cov>=4.1.0; extra == 'dev'
+Requires-Dist: pytest>=8.0.0; extra == 'dev'
+Requires-Dist: ruff>=0.1.0; extra == 'dev'
+Provides-Extra: docs
+Requires-Dist: mkdocs-material>=9.0.0; extra == 'docs'
+Requires-Dist: mkdocs>=1.5.0; extra == 'docs'
+Requires-Dist: mkdocstrings[python]>=0.24.0; extra == 'docs'
+Description-Content-Type: text/markdown
+
 # NovaLabs
 
 Interactive astronomy lab platform for education.

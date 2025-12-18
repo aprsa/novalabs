@@ -1,0 +1,22 @@
+[quiz]
+instructions = "Answer based on the briefing and Stellarium exploration."
+
+[[questions]]
+text = "What primarily causes the apparent daily motion of stars across the sky?"
+options = [
+    "Earth's rotation on its axis",
+    "Earth's revolution around the Sun",
+    "The Moon's gravity",
+    "Stars orbiting Earth"
+]
+correct = 0
+
+[[questions]]
+text = "For an observer, the altitude of Polaris is approximately equal to:"
+options = [
+    "Observer's latitude",
+    "Observer's longitude",
+    "Time of night",
+    "Season of the year"
+]
+correct = 0
